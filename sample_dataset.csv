@@ -1,0 +1,9 @@
+age,city,income,label
+21,A,30000,yes
+22,B,32000,no
+24,A,36000,yes
+27,B,42000,no
+29,A,50000,yes
+31,B,56000,no
+34,A,61000,yes
+36,B,67000,no

@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Learnix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: rgba(24, 24, 27, 0.65);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --brand: #3b82f6;
+      --brand-strong: #60a5fa;
+      --ok: #10b981;
+      --danger: #ef4444;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      /* Using Inter with tight tracking to perfectly mimic Apple SF Pro on Windows */
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+      background-attachment: fixed;
+      padding: 24px;
+      overflow-x: hidden;
+    }
+    
+    /* Background effects */
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      z-index: -1;
+      animation: float 15s infinite ease-in-out alternate;
+    }
+    .blob-1 {
+      width: 500px; height: 500px;
+      background: rgba(59, 130, 246, 0.15);
+      top: 10%; left: -10%;
+    }
+    .blob-2 {
+      width: 600px; height: 600px;
+      background: rgba(167, 139, 250, 0.15);
+      bottom: -10%; right: -10%;
+      animation-delay: -5s;
+    }
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 30px) scale(1.1); }
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Topbar */
+    .topbar {
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      background: rgba(15, 15, 20, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 32px;
+      position: sticky;
+      top: 24px;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin: 0;
+    }
+    .brand-text {
+      background: linear-gradient(90deg, #ffffff 0%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+    }
+    
+    .status-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .status-pill {
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.03);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #52525b;
+      box-shadow: 0 0 8px rgba(82, 82, 91, 0.5);
+    }
+    .led.ok {
+      background: var(--ok);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+    }
+
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+      align-items: start;
+    }
+    .main-stack {
+      display: grid;
+      gap: 24px;
+    }
+    .side-stack {
+      display: grid;
+      gap: 24px;
+      position: sticky;
+      top: 104px;
+    }
+
+    /* Panels */
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    .panel {
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 24px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    .panel::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 25px;
+      padding: 2px;
+      background: conic-gradient(from var(--angle), transparent 60%, rgba(139, 92, 246, 0.5) 80%, rgba(59, 130, 246, 1) 100%);
+      -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: rotate-angle 4s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes rotate-angle {
+      to { --angle: 360deg; }
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .panel-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    }
+    .panel h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    /* Form Fields */
+    .group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field { margin-bottom: 20px; }
+    label {
+      display: block;
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text);
+      padding: 14px 16px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    textarea { min-height: 160px; font-family: ui-monospace, monospace; font-size: 13px; font-weight: 400; line-height: 1.5; box-shadow: inset 0 4px 12px rgba(0,0,0,0.5); }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--brand);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 0 4px rgba(59, 130, 246, 0.15);
+    }
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 16px;
+      padding-right: 40px !important;
+      cursor: pointer;
+    }
+    select:hover {
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 0 2px rgba(139, 92, 246, 0.4);
+    }
+    
+    /* File Upload */
+    input[type="file"] {
+      width: 100%;
+      border: 2px dashed rgba(139, 92, 246, 0.4);
+      border-radius: 16px;
+      padding: 32px 16px;
+      background: linear-gradient(145deg, rgba(20,20,25,0.8), rgba(10,10,15,0.9));
+      box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 4px 20px rgba(139, 92, 246, 0.15);
+      color: var(--muted);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    input[type="file"]:hover {
+      border: 2px dashed rgba(59, 130, 246, 0.8);
+      background: linear-gradient(145deg, rgba(30,30,35,0.8), rgba(20,20,25,0.9));
+      box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 8px 30px rgba(59, 130, 246, 0.3);
+      transform: translateY(-2px);
+    }
+    input[type="file"]::file-selector-button {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      padding: 10px 20px;
+      margin-right: 16px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+      transition: all 0.2s;
+    }
+    input[type="file"]::file-selector-button:hover { 
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(59, 130, 246, 0.5);
+    }
+
+    /* Buttons */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: #fff;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+      filter: brightness(1.1);
+    }
+    button:active { transform: translateY(0); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
+    
+    button.alt {
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+    button.alt:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Feedbacks */
+    .status {
+      margin-top: 16px;
+      min-height: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: none;
+    }
+    .status.show { display: block; animation: fadeIn 0.3s; }
+    .status.ok { color: #34d399; background: rgba(16, 185, 129, 0.1); border-left: 3px solid #34d399; }
+    .status.error { color: #f87171; background: rgba(239, 68, 68, 0.1); border-left: 3px solid #f87171; }
+
+    /* Session Summary Metrics */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .metric-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .metric-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .metric-val {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb { 
+      background: rgba(139, 92, 246, 0.4); 
+      border-radius: 8px; 
+      border: 2px solid transparent; 
+      background-clip: padding-box; 
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.8); border: 2px solid transparent; background-clip: padding-box; }
+
+    /* Output Pre */
+    pre {
+      margin: 0;
+      min-height: 300px;
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #000;
+      color: #e2e8f0;
+      overflow: auto;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+      font-size: 14px;
+      line-height: 1.6;
+      box-shadow: inset 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    /* Footer styling */
+    .footer {
+      margin-top: 48px;
+      padding: 24px;
+      border-radius: 24px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    
+    .copyright-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .crafted-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .crafted-badge:hover {
+      transform: scale(1.03) translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+    .crafted-badge span {
+      background: linear-gradient(135deg, #60a5fa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    @media (max-width: 1060px) {
+      .layout { grid-template-columns: 1fr; }
+      .side-stack { position: static; }
+    }
+    @media (max-width: 660px) {
+      .topbar { flex-direction: column; padding: 16px; }
+      .group { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-blob blob-1"></div>
+  <div class="bg-blob blob-2"></div>
+
+  <main class="container">
+    <header class="topbar">
+      <h1 class="brand"><span class="brand-dot"></span><span class="brand-text">LEARNIX</span></h1>
+      <div class="status-group">
+        <div class="status-pill"><span id="engineLed" class="led"></span> <span id="engineLabel">Checking...</span></div>
+      </div>
+    </header>
+
+    <div class="layout">
+      
+      <!-- Main Content Area -->
+      <div class="main-stack">
+        
+        <!-- Dataset & Training -->
+        <section class="panel">
+          <div class="panel-header">
+            <div class="panel-number">1</div>
+            <h2>Dataset & Training Setup</h2>
+          </div>
+          
+          <div class="field">
+            <label for="csvFile">Upload CSV Dataset</label>
+            <input id="csvFile" type="file" accept=".csv" />
+          </div>
+          <div class="field">
+            <label for="target">Target Column</label>
+            <input id="target" type="text" placeholder="e.g., label or outcome" list="columnList" />
+            <datalist id="columnList"></datalist>
+          </div>
+          
+          <div class="group">
+            <div class="field">
+              <label for="trainSize">Train Size Ratio</label>
+              <input id="trainSize" type="number" value="0.8" step="0.01" min="0.1" max="0.95" />
+            </div>
+            <div class="field">
+              <label for="randomState">Random State (Seed)</label>
+              <input id="randomState" type="number" value="42" step="1" />
+            </div>
+          </div>
+          
+          <div class="field">
+            <label for="incremental">Incremental Training</label>
+            <select id="incremental">
+              <option value="false" selected>Disabled</option>
+              <option value="true">Enabled</option>
+            </select>
+          </div>
+          
+          <div class="actions">
+            <button id="uploadBtn">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+              Upload Data
+            </button>
+            <button id="trainBtn">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+              Train Model
+            </button>
+          </div>
+          <div id="uploadStatus" class="status"></div>
+          <div id="trainStatus" class="status"></div>
+        </section>
+
+        <!-- Prediction -->
+        <section class="panel">
+          <div class="panel-header">
+            <div class="panel-number">2</div>
+            <h2>Predict using Model</h2>
+          </div>
+          
+          <div class="field">
+            <label for="predictBody">JSON Payload for Prediction</label>
+            <textarea id="predictBody">{
+  "rows": [
+    { "age": 30, "city": "A", "income": 62000 }
+  ]
+}</textarea>
+          </div>
+          
+          <div class="actions">
+            <button id="predictBtn">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Run Prediction
+            </button>
+            <button id="templateBtn" class="alt">Auto-Template</button>
+            <button id="modelsBtn" class="alt">View Models</button>
+          </div>
+          <div id="predictStatus" class="status"></div>
+          
+          <div class="field" style="margin-top: 24px;">
+            <label for="apiBase">API Base URL (Optional)</label>
+            <input id="apiBase" type="text" placeholder="Leave blank for local, or paste remote URL" />
+          </div>
+        </section>
+      </div>
+
+      <!-- Side Stack Area (Session & Output) -->
+      <div class="side-stack">
+        
+        <!-- Session Summary (Restored and Upgraded) -->
+        <section class="panel" style="padding: 20px;">
+          <h2 style="font-size:16px; margin-bottom:16px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Session Summary</h2>
+          <div class="summary-grid">
+            <div class="metric-card">
+              <div class="metric-label">Data Rows</div>
+              <div class="metric-val" id="sumRows">-</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Target</div>
+              <div class="metric-val" id="sumTarget">-</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Task Type</div>
+              <div class="metric-val" id="sumTask">-</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Model Perf.</div>
+              <div class="metric-val" id="sumMetric">-</div>
+            </div>
+          </div>
+          <div class="metric-card" style="margin-top:12px;">
+            <div class="metric-label">Model ID</div>
+            <div class="metric-val" id="sumModelId">-</div>
+          </div>
+        </section>
+
+        <!-- Live Output -->
+        <section class="panel" style="padding: 20px;">
+          <h2 style="font-size:16px; margin-bottom:16px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Live Output</h2>
+          <pre id="output">{
+  "system": "online",
+  "status": "ready"
+}</pre>
+        </section>
+        
+      </div>
+
+    </div>
+
+    <footer class="footer">
+      <button class="copyright-btn" onclick="alert('Copyright © ' + new Date().getFullYear() + ' Learnix. All rights reserved.')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>Copyright © 2026 Learnix. All rights reserved.</span>
+      </button>
+      <div class="crafted-badge">
+        Crafted by <span>Mihir</span> 🚀
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const output = document.getElementById("output");
+    const engineLed = document.getElementById("engineLed");
+    const engineLabel = document.getElementById("engineLabel");
+    const csvFile = document.getElementById("csvFile");
+    const target = document.getElementById("target");
+    const trainSize = document.getElementById("trainSize");
+    const randomState = document.getElementById("randomState");
+    const incremental = document.getElementById("incremental");
+    const predictBody = document.getElementById("predictBody");
+    const apiBaseInput = document.getElementById("apiBase");
+    const uploadStatus = document.getElementById("uploadStatus");
+    const trainStatus = document.getElementById("trainStatus");
+    const predictStatus = document.getElementById("predictStatus");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const trainBtn = document.getElementById("trainBtn");
+    const predictBtn = document.getElementById("predictBtn");
+    const templateBtn = document.getElementById("templateBtn");
+    const modelsBtn = document.getElementById("modelsBtn");
+    const columnList = document.getElementById("columnList");
+
+    // Session Summary Elements
+    const sumRows = document.getElementById("sumRows");
+    const sumTarget = document.getElementById("sumTarget");
+    const sumTask = document.getElementById("sumTask");
+    const sumMetric = document.getElementById("sumMetric");
+    const sumModelId = document.getElementById("sumModelId");
+
+    const state = {
+      uploaded: false,
+      trained: false,
+      columns: [],
+      previewRows: []
+    };
+
+    const savedApiBase = localStorage.getItem("learnix_api_base") || "";
+    apiBaseInput.value = savedApiBase;
+
+    // ── DEFAULT BACKEND URL ──────────────────────────────────────────
+    // After deploying to Render, replace this with your Render URL.
+    // Example: "https://learnix-api.onrender.com"
+    const RENDER_BACKEND = "https://PASTE_YOUR_RENDER_URL_HERE";
+    // ────────────────────────────────────────────────────────────────
+
+    function apiBase() {
+      const value = apiBaseInput.value.trim();
+      if (value) return value.replace(/\/+$/, "");
+      if (window.location.protocol === "file:") return "http://127.0.0.1:8000";
+      // When hosted on Netlify / any static host, use the Render backend
+      return RENDER_BACKEND;
+    }
+
+    function endpoint(path) {
+      const base = apiBase();
+      return base ? base + path : path;
+    }
+
+    function show(obj) {
+      output.textContent = JSON.stringify(obj, null, 2);
+      output.style.borderColor = "var(--brand)";
+      setTimeout(() => output.style.borderColor = "rgba(255,255,255,0.1)", 500);
+    }
+
+    function setBusy(btn, busy, busyText, idleText, iconHtml = "") {
+      btn.disabled = busy;
+      if (busy) {
+        btn.innerHTML = `<svg style="width:18px;height:18px;animation:rotate 1s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>` + busyText;
+      } else {
+        btn.innerHTML = iconHtml + idleText;
+      }
+    }
+
+    function setStatus(el, text, kind) {
+      el.textContent = text || "";
+      el.classList.remove("ok", "error", "show");
+      if (text) {
+        el.classList.add("show");
+        if (kind) el.classList.add(kind);
+      }
+    }
+
+    function splitCsvLine(line) {
+      const out = [];
+      let cur = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          const next = line[i + 1];
+          if (inQuotes && next === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === "," && !inQuotes) {
+          out.push(cur.trim());
+          cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      out.push(cur.trim());
+      return out;
+    }
+
+    function parseCsv(text, maxRows) {
+      const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+      if (!lines.length) return { headers: [], rows: [] };
+      const headers = splitCsvLine(lines[0]).map((cell) => cell.replace(/^"|"$/g, ""));
+      const rows = [];
+      for (let i = 1; i < lines.length && rows.length < maxRows; i++) {
+        const cells = splitCsvLine(lines[i]).map((cell) => cell.replace(/^"|"$/g, ""));
+        const row = {};
+        for (let col = 0; col < headers.length; col++) row[headers[col]] = cells[col] ?? "";
+        rows.push(row);
+      }
+      return { headers, rows };
+    }
+
+    function renderColumns(cols) {
+      columnList.innerHTML = "";
+      cols.forEach((col) => {
+        const opt = document.createElement("option");
+        opt.value = col;
+        columnList.appendChild(opt);
+      });
+    }
+
+    function buildTemplateFromFirstRow() {
+      if (!state.previewRows.length || !state.columns.length) {
+        setStatus(predictStatus, "Upload a CSV first.", "error");
+        return;
+      }
+      const targetCol = target.value.trim();
+      const src = state.previewRows[0];
+      const row = {};
+      state.columns.forEach((col) => {
+        if (col === targetCol) return;
+        const raw = src[col];
+        const maybeNumber = Number(raw);
+        row[col] = raw !== "" && Number.isFinite(maybeNumber) ? maybeNumber : raw;
+      });
+      predictBody.value = JSON.stringify({ rows: [row] }, null, 2);
+      setStatus(predictStatus, "Template generated from first row.", "ok");
+    }
+
+    async function checkHealth() {
+      engineLabel.textContent = "Checking Server...";
+      engineLed.classList.remove("ok");
+      try {
+        const response = await fetch(endpoint("/health"));
+        const data = await response.json();
+        if (response.ok && data.status === "ok") {
+          engineLabel.textContent = "Server Online";
+          engineLed.classList.add("ok");
+          return;
+        }
+      } catch (_) {}
+      engineLabel.textContent = "Server Offline";
+    }
+
+    apiBaseInput.addEventListener("change", () => {
+      localStorage.setItem("learnix_api_base", apiBaseInput.value.trim());
+      checkHealth();
+    });
+
+    csvFile.addEventListener("change", async () => {
+      const file = csvFile.files[0];
+      if (!file) return;
+      const parsed = parseCsv(await file.text(), 8);
+      state.columns = parsed.headers;
+      state.previewRows = parsed.rows;
+      renderColumns(parsed.headers);
+      if (parsed.headers.length) target.value = parsed.headers[parsed.headers.length - 1];
+      buildTemplateFromFirstRow();
+      setStatus(uploadStatus, "CSV parsed locally. Ready to upload.", "ok");
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      setStatus(uploadStatus, "", null);
+      const file = csvFile.files[0];
+      const targetValue = target.value.trim();
+      if (!file || !targetValue) {
+        setStatus(uploadStatus, "Select CSV and target column first.", "error");
+        return;
+      }
+
+      const icon = `<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>`;
+      setBusy(uploadBtn, true, "Uploading...", "Upload Data", icon);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("target", targetValue);
+        const response = await fetch(endpoint("/upload_csv"), { method: "POST", body: formData });
+        const data = await response.json();
+        show(data);
+        if (!response.ok) {
+          setStatus(uploadStatus, data.detail || "Upload failed.", "error");
+          return;
+        }
+        state.uploaded = true;
+        state.trained = false;
+        
+        // Update Session Summary
+        sumRows.textContent = data.rows ?? "-";
+        sumTarget.textContent = data.target ?? targetValue;
+        sumTask.textContent = data.inferred_task ?? "-";
+        sumMetric.textContent = "-";
+        sumModelId.textContent = "-";
+
+        setStatus(uploadStatus, "Upload successful.", "ok");
+      } catch (err) {
+        setStatus(uploadStatus, "Upload failed. Check if server is running.", "error");
+      } finally {
+        setBusy(uploadBtn, false, "Uploading...", "Upload Data", icon);
+      }
+    });
+
+    trainBtn.addEventListener("click", async () => {
+      setStatus(trainStatus, "", null);
+      if (!state.uploaded) {
+        setStatus(trainStatus, "Upload dataset first.", "error");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        train_size: String(trainSize.value || "0.8"),
+        random_state: String(randomState.value || "42"),
+        incremental: String(incremental.value || "false")
+      });
+
+      const icon = `<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>`;
+      setBusy(trainBtn, true, "Training...", "Train Model", icon);
+      try {
+        const response = await fetch(endpoint("/train?" + params.toString()), { method: "POST" });
+        const data = await response.json();
+        show(data);
+        if (!response.ok) {
+          setStatus(trainStatus, data.detail || "Training failed.", "error");
+          return;
+        }
+        state.trained = true;
+        
+        // Update Session Summary
+        if (data.metadata?.task) sumTask.textContent = data.metadata.task;
+        const m = data.metadata?.metric;
+        const n = data.metadata?.metric_name || "metric";
+        sumMetric.textContent = m === undefined ? "-" : n + ": " + Number(m).toFixed(4);
+        sumModelId.textContent = data.modelId || "-";
+
+        setStatus(trainStatus, "Training complete.", "ok");
+      } catch (err) {
+        setStatus(trainStatus, "Training failed. Check if server is running.", "error");
+      } finally {
+        setBusy(trainBtn, false, "Training...", "Train Model", icon);
+      }
+    });
+
+    predictBtn.addEventListener("click", async () => {
+      setStatus(predictStatus, "", null);
+      if (!state.trained) {
+        setStatus(predictStatus, "Train a model before prediction.", "error");
+        return;
+      }
+      let payload;
+      try {
+        payload = JSON.parse(predictBody.value);
+      } catch (_) {
+        setStatus(predictStatus, "Predict JSON is invalid.", "error");
+        return;
+      }
+
+      const icon = `<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`;
+      setBusy(predictBtn, true, "Predicting...", "Run Prediction", icon);
+      try {
+        const response = await fetch(endpoint("/predict"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        show(data);
+        if (!response.ok) {
+          setStatus(predictStatus, data.detail || "Prediction failed.", "error");
+          return;
+        }
+        setStatus(predictStatus, "Prediction complete.", "ok");
+      } catch (err) {
+        setStatus(predictStatus, "Prediction failed. Check if server is running.", "error");
+      } finally {
+        setBusy(predictBtn, false, "Predicting...", "Run Prediction", icon);
+      }
+    });
+
+    modelsBtn.addEventListener("click", async () => {
+      setBusy(modelsBtn, true, "Loading...", "View Models");
+      try {
+        const response = await fetch(endpoint("/models"));
+        const data = await response.json();
+        show(data);
+        if (!response.ok) setStatus(predictStatus, "Could not load models.", "error");
+        else setStatus(predictStatus, "Loaded saved models.", "ok");
+      } catch (err) {
+        setStatus(predictStatus, "Could not load models.", "error");
+      } finally {
+        setBusy(modelsBtn, false, "Loading...", "View Models");
+      }
+    });
+
+    templateBtn.addEventListener("click", buildTemplateFromFirstRow);
+
+    checkHealth();
+  </script>
+</body>
+</html>
