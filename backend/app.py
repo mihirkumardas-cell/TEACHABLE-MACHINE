@@ -104,9 +104,9 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
 
 def choose_model(task: str, incremental: bool = False):
     if task == "classification":
-        return SGDClassifier(max_iter=1000, tol=1e-3) if incremental else RandomForestClassifier(n_estimators=100)
+        return SGDClassifier(max_iter=1000, tol=1e-3) if incremental else RandomForestClassifier(n_estimators=30, max_depth=15, n_jobs=-1)
     else:
-        return SGDRegressor(max_iter=1000, tol=1e-3) if incremental else RandomForestRegressor(n_estimators=100)
+        return SGDRegressor(max_iter=1000, tol=1e-3) if incremental else RandomForestRegressor(n_estimators=30, max_depth=15, n_jobs=-1)
 
 
 def save_artifact(model_pipeline: Pipeline, metadata: dict) -> str:
